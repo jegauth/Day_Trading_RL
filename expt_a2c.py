@@ -1,10 +1,8 @@
 import pandas as pd
-import numpy as np
 import custom_env
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3 import A2C
 import gym
-import gym_anytrading
 
 
 if __name__ == "__main__":
