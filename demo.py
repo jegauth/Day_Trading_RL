@@ -69,7 +69,16 @@ class ActorCritic(nn.Module):
         return pi, v
 
     def calc_R(self, done):
-        states = T.tensor(np.array([item[0] for item in self.states]), dtype=T.float)
+        var_states = []
+        for i, item in enumerate(self.states):
+            while isinstance(item, tuple):
+                item = item[0]
+            var_states.append(item)
+        self.states = var_states
+
+        states = T.tensor(np.array(self.states), dtype=T.float)
+
+        # states = T.tensor(np.array([item[0] for item in self.states]), dtype=T.float)
         _, v = self.forward(states)
 
         R = v[-1] * (1 - int(done))
@@ -84,9 +93,15 @@ class ActorCritic(nn.Module):
         return batch_return
 
     def calc_loss(self, done):
-        # print('calc_loss self.states:', self.states)
-        states = T.tensor(np.array([item[0] for item in self.states]), dtype=T.float)
-        # print('calc_loss self.actions:', self.actions)
+        var_states = []
+        for i, item in enumerate(self.states):
+            while isinstance(item, tuple):
+                item = item[0]
+            var_states.append(item)
+        self.states = var_states
+
+        states = T.tensor(np.array(self.states), dtype=T.float)
+        # print('calc_loss self.actions:', self.actions); exit(0)
         actions = T.tensor(np.array(self.actions), dtype=T.float)
         # print('pass till here')
         # print('calc_loss done:', done)
@@ -106,11 +121,14 @@ class ActorCritic(nn.Module):
         return total_loss
 
     def choose_action(self, observation):
-        # print('observation:', observation)
+        # print('before observation:', observation)
         # print('shape observation:', observation.shape)
-        observation = observation[0]
+        # observation = observation[0]
         # print('observation:', observation)
-        # print('shape observation:', observation.shape)
+        # print('shape observation:', observation.shape); exit(0)
+
+        while isinstance(observation, tuple):
+            observation = observation[0]
 
         state = T.tensor(np.array([observation]), dtype=T.float)
         # print('state:', state)
@@ -153,7 +171,15 @@ class Agent(mp.Process):
                 action = self.local_actor_critic.choose_action(observation)
                 # print('action:', action); exit(0)
                 # observation_, reward, done, info, _ = self.env.step(action)
-                observation_, reward, done, info = self.env.step(action)
+                # print('check:', self.env.step(action)); exit(0)
+                # observation_, reward, done, info = self.env.step(action)
+
+                collect_from_action = self.env.step(action)
+                observation_ = collect_from_action[0]
+                reward = collect_from_action[1]
+                done = collect_from_action[2]
+                info = collect_from_action[3]
+
                 score += reward
                 self.local_actor_critic.remember(observation, action, reward)
                 if t_step % self.T_MAX == 0 or done:
