@@ -143,11 +143,17 @@ class Agent(mp.Process):
         while self.episode_idx.value < self.N_GAMES:
             done = False
             observation = self.env.reset()
+            observation = (observation, {})
+
+            # print('observation:', observation); exit(0)
             score = 0
             self.local_actor_critic.clear_memory()
             while not done:
+                # print('observation:', observation); exit(0)
                 action = self.local_actor_critic.choose_action(observation)
-                observation_, reward, done, info, _ = self.env.step(action)
+                # print('action:', action); exit(0)
+                # observation_, reward, done, info, _ = self.env.step(action)
+                observation_, reward, done, info = self.env.step(action)
                 score += reward
                 self.local_actor_critic.remember(observation, action, reward)
                 if t_step % self.T_MAX == 0 or done:
