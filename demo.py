@@ -147,25 +147,26 @@ class Agent(mp.Process):
             self.local_actor_critic.clear_memory()
             while not done:
                 action = self.local_actor_critic.choose_action(observation)
-                # print('action:', action)
-                # print('env:', self.env.step(action))
                 observation_, reward, done, info, _ = self.env.step(action)
                 score += reward
                 self.local_actor_critic.remember(observation, action, reward)
                 if t_step % self.T_MAX == 0 or done:
                     loss = self.local_actor_critic.calc_loss(done)
+                    # print('loss:', loss)
                     self.optimizer.zero_grad()
                     loss.backward()
-                    # for local_param, global_param in zip(
-                    #         self.local_actor_critic.parameters(),
-                    #         self.global_actor_critic.parameters()):
-                    #     global_param._grad = local_param.grad
-                    # self.optimizer.step()
-                    # self.local_actor_critic.load_state_dict(
-                    #     self.global_actor_critic.state_dict())
-                    # self.local_actor_critic.clear_memory()
-                # t_step += 1
-                # observation = observation_
+                    # print('after loss:', loss)
+                    for local_param, global_param in zip(
+                            self.local_actor_critic.parameters(),
+                            self.global_actor_critic.parameters()):
+                        global_param._grad = local_param.grad
+                    self.optimizer.step()
+                    self.local_actor_critic.load_state_dict(
+                        self.global_actor_critic.state_dict())
+                    self.local_actor_critic.clear_memory()
+                t_step += 1
+                # print('observation_:', observation_); exit(0)
+                observation = (observation_, {})
             with self.episode_idx.get_lock():
                 self.episode_idx.value += 1
             print(self.name, 'episode ', self.episode_idx.value, 'reward %.1f' % score)
