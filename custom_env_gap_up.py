@@ -48,6 +48,7 @@ class TradingEnv(gym.Env):
         self._total_profit = None
         self._first_rendering = None
         self.history = None
+        self._num_shares = None
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -203,6 +204,13 @@ class StocksEnv(TradingEnv):
     def _calculate_reward(self, action):
         step_reward = 0
 
+        # 1 if return is positive
+        # if return is negative then -1
+        # if 0 return then 0 as reward
+        # two ways to reward the agent
+        # the other way is to use return
+        # price diff * no of shares = return
+
         trade = False
         if action == Actions.Buy.value and self._position == Positions.Short:
             trade = True
@@ -210,15 +218,20 @@ class StocksEnv(TradingEnv):
         if trade:
             current_price = self.prices[self._current_tick]
             last_trade_price = self.prices[self._last_trade_tick]
-            price_diff = current_price - last_trade_price
+            price_diff = last_trade_price - current_price
 
-            # if self._position == Positions.Long:
-            #     step_reward += price_diff
-            step_reward += price_diff
+            step_reward += (price_diff * self._num_shares)
 
         return step_reward
 
     def _update_profit(self, action):
+
+        # selling at certain price and buy back at price lower
+        #  (selling price - buying price) * no of shares = profit
+        # start with a wallet of 10 thousand
+        # kelly criterion ( ask chatGPT to get the python function)
+        # kelly criterion gives the percentage of wallet
+
         trade = False
         if action == Actions.Buy.value and self._position == Positions.Short:
             trade = True
